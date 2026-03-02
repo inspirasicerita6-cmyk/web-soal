@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edu-Quiz Generator - Kurikulum Merdeka</title>
+    
+    <!-- Framework CSS: Tailwind (Desain Profesional & Responsif) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Library Ikon: Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- BAGIAN CSS (Styling) -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        /* Desain khusus untuk cetak */
+        @media print {
+            .print-hidden { display: none !important; }
+            body { background: white; padding: 0; }
+            .container { max-width: 100%; width: 100%; padding: 0; margin: 0; }
+            .shadow-sm, .shadow-lg { box-shadow: none !important; border: none !important; }
+            @page { margin: 2cm; }
+        }
+
+        /* Animasi Loading */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2563eb;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+    <div class="p-4 md:p-8">
+        <!-- HEADER APLIKASI -->
+        <header class="max-w-6xl mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 print-hidden">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 p-2.5 rounded-xl shadow-blue-200 shadow-lg">
+                    <i data-lucide="graduation-cap" class="text-white w-8 h-8"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Edu-Quiz Generator</h1>
+                    <p class="text-slate-500 text-sm font-medium">Asisten Cerdas Guru Indonesia</p>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- SIDEBAR: KONFIGURASI (HTML) -->
+            <div class="lg:col-span-4 space-y-6 print-hidden">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex items-center gap-2 mb-6 text-blue-600 font-bold uppercase tracking-wider text-xs">
+                        <i data-lucide="settings-2" class="w-4 h-4"></i>
+                        <span>Konfigurasi Perangkat Ajar</span>
+                    </div>
+
+                    <div class="space-y-5">
+                        <!-- Pilihan Jenjang -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Jenjang Pendidikan</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button onclick="setJenjang('SD')" id="btn-SD" class="jenjang-btn py-2.5 px-3 rounded-xl text-sm font-semibold transition-all bg-blue-600 text-white shadow-md">SD</button>
+                                <button onclick="setJenjang('SMP')" id="btn-SMP" class="jenjang-btn py-2.5 px-3 rounded-xl text-sm font-semibold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200">SMP</button>
+                                <button onclick="setJenjang('SMA')" id="btn-SMA" class="jenjang-btn py-2.5 px-3 rounded-xl text-sm font-semibold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200">SMA</button>
+                            </div>
+                        </div>
+
+                        <!-- Mata Pelajaran -->
+                        <div>
+                            <label for="mapel" class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Mata Pelajaran</label>
+                            <input type="text" id="mapel" placeholder="Contoh: Matematika, IPA" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all">
+                        </div>
+
+                        <!-- Kelas & Jumlah Soal -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="kelas" class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Kelas</label>
+                                <input type="text" id="kelas" placeholder="Misal: 4, 7, X" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all">
+                            </div>
+                            <div>
+                                <label for="jumlah" class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Jumlah Soal</label>
+                                <select id="jumlah" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all">
+                                    <option value="5">5 Soal</option>
+                                    <option value="10">10 Soal</option>
+                                    <option value="15">15 Soal</option>
+                                    <option value="20">20 Soal</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Topik -->
+                        <div>
+                            <label for="topik" class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Topik / Materi</label>
+                            <textarea id="topik" rows="2" placeholder="Contoh: Energi Terbarukan" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all"></textarea>
+                        </div>
+
+                        <!-- Kesulitan -->
+                        <div>
+                            <label for="kesulitan" class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Tingkat Kesulitan</label>
+                            <select id="kesulitan" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all">
+                                <option value="Mudah">Mudah (C1-C2)</option>
+                                <option value="Sedang" selected>Sedang (C3-C4)</option>
+                                <option value="Sulit (HOTS)">Sulit (HOTS - C5-C6)</option>
+                            </select>
+                        </div>
+
+                        <!-- Tombol Generate -->
+                        <button id="generate-btn" onclick="generateQuestions()" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-100 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                            <i data-lucide="sparkles" class="w-5 h-5"></i>
+                            <span id="btn-text">Hasilkan Soal</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Box Pesan Error -->
+                <div id="error-box" class="hidden bg-red-50 border border-red-200 p-4 rounded-xl text-red-700 text-sm flex items-start gap-3">
+                    <i data-lucide="alert-circle" class="shrink-0 w-5 h-5"></i>
+                    <p id="error-message"></p>
+                </div>
+            </div>
+
+            <!-- AREA HASIL (HTML) -->
+            <div class="lg:col-span-8">
+                <!-- Tampilan Awal (Kosong) -->
+                <div id="empty-state" class="h-full min-h-[500px] flex flex-col items-center justify-center bg-white rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center text-slate-400">
+                    <div class="bg-slate-50 p-6 rounded-full mb-6">
+                        <i data-lucide="file-edit" class="w-12 h-12 opacity-30"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-600 mb-2">Siap untuk Menyusun Soal?</h3>
+                    <p class="max-w-xs mx-auto text-sm leading-relaxed">
+                        Lengkapi formulir di samping untuk membuat soal pilihan ganda secara otomatis sesuai Kurikulum Merdeka.
+                    </p>
+                </div>
+
+                <!-- Container Hasil -->
+                <div id="result-container" class="hidden space-y-6">
+                    <div class="bg-white p-6 md:p-10 rounded-2xl shadow-sm border border-slate-200 print:shadow-none print:border-none print:p-0">
+                        
+                        <!-- Kontrol Aksi Hasil -->
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10 print-hidden">
+                            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-lg text-xs">Generated</span>
+                                Lembar Soal
+                            </h3>
+                            <div class="flex gap-2">
+                                <button onclick="copyToClipboard()" id="copy-btn" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition-all">
+                                    <i data-lucide="copy" class="w-4 h-4"></i> Salin
+                                </button>
+                                <button onclick="window.print()" class="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-sm font-semibold transition-all">
+                                    <i data-lucide="printer" class="w-4 h-4"></i> Cetak
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Konten Quiz -->
+                        <div id="quiz-content">
+                            <!-- Header Cetak -->
+                            <div id="print-header" class="hidden print:block border-b-4 border-double border-slate-800 pb-4 mb-8 text-center">
+                                <h2 class="text-2xl font-black uppercase tracking-tighter">ASESMEN SUMATIF HARIAN</h2>
+                                <div class="grid grid-cols-2 mt-6 text-left text-sm font-bold uppercase tracking-wide gap-x-12 gap-y-1">
+                                    <div id="print-left"></div>
+                                    <div id="print-right" class="text-right"></div>
+                                </div>
+                            </div>
+
+                            <!-- List Pertanyaan -->
+                            <div id="questions-list" class="space-y-10"></div>
+                        </div>
+
+                        <!-- Garis Pembatas -->
+                        <hr class="my-12 border-slate-100 print-hidden">
+
+                        <!-- Section Kunci Jawaban -->
+                        <div class="print:break-before-page">
+                            <button onclick="toggleAnswers()" class="flex items-center justify-between w-full py-4 px-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all print-hidden">
+                                <div class="flex items-center gap-3 text-green-700 font-bold">
+                                    <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                                    <span>Kunci Jawaban & Pembahasan</span>
+                                </div>
+                                <i data-lucide="chevron-down" id="chevron-icon" class="w-5 h-5 transition-transform"></i>
+                            </button>
+
+                            <div id="answers-list" class="hidden mt-6 space-y-4 print:block">
+                                <h4 class="hidden print:block font-bold text-xl mb-6 border-b-2 pb-2">KUNCI JAWABAN & PEMBAHASAN</h4>
+                                <!-- Injection Point Jawaban -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="max-w-6xl mx-auto mt-12 pb-12 text-center text-slate-400 text-xs font-medium uppercase tracking-widest print-hidden">
+            <p>Ditenagai oleh Kecerdasan Buatan • AI Edu-Assistant v2.0</p>
+        </footer>
+    </div>
+
+    <!-- BAGIAN JAVASCRIPT (Logika) -->
+    <script>
+        // State Global
+        let currentJenjang = 'SD';
+        let currentQuestions = [];
+        let answersVisible = false;
+        const apiKey = ""; // Disuplai otomatis oleh environment saat runtime
+
+        // Inisialisasi Ikon Lucide
+        lucide.createIcons();
+
+        // Fungsi berpindah jenjang
+        function setJenjang(val) {
+            currentJenjang = val;
+            document.querySelectorAll('.jenjang-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+                btn.classList.add('bg-slate-100', 'text-slate-600');
+            });
+            const activeBtn = document.getElementById('btn-' + val);
+            activeBtn.classList.remove('bg-slate-100', 'text-slate-600');
+            activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+        }
+
+        // Tampilkan/Sembunyikan Kunci Jawaban
+        function toggleAnswers() {
+            answersVisible = !answersVisible;
+            const list = document.getElementById('answers-list');
+            const icon = document.getElementById('chevron-icon');
+            if (answersVisible) {
+                list.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                list.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Fungsi Utama Generate Soal (Panggil API Gemini)
+        async function generateQuestions() {
+            const mapel = document.getElementById('mapel').value;
+            const kelas = document.getElementById('kelas').value;
+            const topik = document.getElementById('topik').value;
+            const jumlah = document.getElementById('jumlah').value;
+            const kesulitan = document.getElementById('kesulitan').value;
+
+            if (!mapel || !kelas || !topik) {
+                showError("Mohon isi Mata Pelajaran, Kelas, dan Topik materi.");
+                return;
+            }
+
+            setLoading(true);
+            hideError();
+
+            const systemPrompt = `Anda adalah AI Edu-Assistant profesional Indonesia. 
+            Tugas: Membuat soal asesmen kurikulum merdeka.
+            Aturan:
+            1. Jenjang SD & SMP: Opsi A, B, C, D (Hanya 4).
+            2. Jenjang SMA: Opsi A, B, C, D, E (Harus 5).
+            3. Pastikan bahasa mendidik dan sesuai usia siswa ${currentJenjang} kelas ${kelas}.
+            4. Gunakan format JSON murni sesuai spesifikasi.`;
+
+            const userQuery = `Buat ${jumlah} soal pilihan ganda:
+            Mata Pelajaran: ${mapel}
+            Kelas: ${kelas}
+            Jenjang: ${currentJenjang}
+            Materi: ${topik}
+            Kesulitan: ${kesulitan}
+            
+            Format Output JSON:
+            { "quiz": [ { "no": 1, "question": "pertanyaan", "options": {"A": "opsi", "B": "opsi", "C": "opsi", "D": "opsi"}, "answer": "A", "explanation": "pembahasan" } ] }`;
+
+            try {
+                const response = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userQuery }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        generationConfig: { 
+                            responseMimeType: "application/json", 
+                            temperature: 0.7 
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!content) throw new Error("Gagal mengambil data dari AI.");
+
+                const parsed = JSON.parse(content);
+                currentQuestions = parsed.quiz || [];
+                renderResults();
+            } catch (err) {
+                showError("Terjadi kendala teknis. Mohon periksa koneksi internet Bapak/Ibu.");
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Helper Fetch dengan Exponential Backoff (Sesuai Aturan)
+        async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
+            try {
+                const res = await fetch(url, options);
+                if (!res.ok) throw new Error("HTTP Error: " + res.status);
+                return res;
+            } catch (err) {
+                if (retries > 0) {
+                    await new Promise(r => setTimeout(r, delay));
+                    return fetchWithRetry(url, options, retries - 1, delay * 2);
+                }
+                throw err;
+            }
+        }
+
+        // Render Data ke UI
+        function renderResults() {
+            const list = document.getElementById('questions-list');
+            const answers = document.getElementById('answers-list');
+            
+            list.innerHTML = '';
+            
+            // Render Soal
+            currentQuestions.forEach(q => {
+                const qDiv = document.createElement('div');
+                qDiv.className = 'question-block';
+                
+                let optionsHtml = '';
+                // Filter agar tidak ada opsi kosong (fix bug E di SD)
+                Object.entries(q.options).forEach(([key, val]) => {
+                    if (val && val.toString().trim() !== "") {
+                        optionsHtml += `
+                            <div class="flex items-start gap-3">
+                                <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center border-2 border-slate-100 rounded-lg text-xs font-bold text-slate-400 uppercase">${key}</span>
+                                <span class="text-slate-700 text-[15px] leading-relaxed">${val}</span>
+                            </div>
+                        `;
+                    }
+                });
+
+                qDiv.innerHTML = `
+                    <p class="font-bold text-slate-800 mb-5 leading-relaxed text-base">
+                        ${q.no}. ${q.question}
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 ml-2 md:ml-4">
+                        ${optionsHtml}
+                    </div>
+                `;
+                list.appendChild(qDiv);
+            });
+
+            // Render Pembahasan
+            answers.innerHTML = '<h4 class="hidden print:block font-bold text-xl mb-6 border-b-2 pb-2">KUNCI JAWABAN & PEMBAHASAN</h4>';
+            currentQuestions.forEach(q => {
+                const aDiv = document.createElement('div');
+                aDiv.className = 'p-5 bg-green-50/50 border border-green-100 rounded-2xl print:bg-white print:border-slate-100 mb-4';
+                aDiv.innerHTML = `
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="bg-green-600 text-white px-2 py-0.5 rounded-md text-[10px] font-black uppercase">Nomor ${q.no}</span>
+                        <span class="font-black text-green-700">KUNCI: ${q.answer}</span>
+                    </div>
+                    <p class="text-sm text-green-800 leading-relaxed">
+                        <span class="font-bold">Pembahasan:</span> ${q.explanation}
+                    </p>
+                `;
+                answers.appendChild(aDiv);
+            });
+
+            // Update Header Cetak
+            document.getElementById('print-left').innerHTML = `
+                <p>Mata Pelajaran: ${document.getElementById('mapel').value}</p>
+                <p>Kelas / Jenjang: ${document.getElementById('kelas').value} / ${currentJenjang}</p>
+            `;
+            document.getElementById('print-right').innerHTML = `
+                <p>Materi: ${document.getElementById('topik').value}</p>
+                <p>Nama Siswa: ................................</p>
+            `;
+
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('result-container').classList.remove('hidden');
+            window.scrollTo({ top: document.getElementById('result-container').offsetTop - 50, behavior: 'smooth' });
+        }
+
+        // State Manager: Loading
+        function setLoading(state) {
+            const btn = document.getElementById('generate-btn');
+            if (state) {
+                btn.disabled = true;
+                btn.classList.add('opacity-70', 'cursor-not-allowed');
+                btn.innerHTML = `<div class="loader"></div> <span class="ml-2">Sedang Merancang...</span>`;
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('opacity-70', 'cursor-not-allowed');
+                btn.innerHTML = `<i data-lucide="sparkles" class="w-5 h-5"></i> <span id="btn-text">Hasilkan Soal</span>`;
+                lucide.createIcons();
+            }
+        }
+
+        // Pesan Error
+        function showError(msg) {
+            const box = document.getElementById('error-box');
+            document.getElementById('error-message').innerText = msg;
+            box.classList.remove('hidden');
+            setTimeout(() => hideError(), 5000);
+        }
+
+        function hideError() {
+            document.getElementById('error-box').classList.add('hidden');
+        }
+
+        // Salin Teks Soal
+        function copyToClipboard() {
+            let text = `SOAL ASESMEN: ${document.getElementById('topik').value}\n\n`;
+            currentQuestions.forEach(q => {
+                text += `${q.no}. ${q.question}\n`;
+                Object.entries(q.options).forEach(([key, val]) => {
+                    if (val && val.toString().trim() !== "") text += `${key}. ${val}\n`;
+                });
+                text += "\n";
+            });
+
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            const btn = document.getElementById('copy-btn');
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-green-600"></i> Tersalin!';
+            setTimeout(() => {
+                btn.innerHTML = original;
+                lucide.createIcons();
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
