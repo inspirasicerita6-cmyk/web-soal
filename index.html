@@ -219,256 +219,46 @@
     </div>
 
     <!-- BAGIAN JAVASCRIPT (Logika) -->
-    <script>
-        // State Global
-        let currentJenjang = 'SD';
-        let currentQuestions = [];
-        let answersVisible = false;
-        const apiKey = ""; // Disuplai otomatis oleh environment saat runtime
+   <script>
+  async function generateQuestions() {
+    try {
+      // ambil nilai form (sesuaikan kalau ID kamu beda)
+      const subject = document.querySelector('input[name="mapel"], #mapel')?.value || "IPA";
+      const grade = document.querySelector('input[name="kelas"], #kelas')?.value || "4";
+      const topic = document.querySelector('textarea[name="topik"], #topik')?.value || "Tumbuhan";
+      const count = document.querySelector('select[name="jumlah"], #jumlah')?.value || "5";
+      const difficulty = document.querySelector('select[name="kesulitan"], #kesulitan')?.value || "Sedang (C3-C4)";
 
-        // Inisialisasi Ikon Lucide
-        lucide.createIcons();
+      const prompt = `Buat ${count} soal ${subject} kelas ${grade} topik ${topic} tingkat ${difficulty}.
+Format: pilihan ganda A-D + kunci jawaban. Balas JSON.`;
 
-        // Fungsi berpindah jenjang
-        function setJenjang(val) {
-            currentJenjang = val;
-            document.querySelectorAll('.jenjang-btn').forEach(btn => {
-                btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
-                btn.classList.add('bg-slate-100', 'text-slate-600');
-            });
-            const activeBtn = document.getElementById('btn-' + val);
-            activeBtn.classList.remove('bg-slate-100', 'text-slate-600');
-            activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
-        }
+      // panggil Netlify function
+      const res = await fetch("/.netlify/functions/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt })
+      });
 
-        // Tampilkan/Sembunyikan Kunci Jawaban
-        function toggleAnswers() {
-            answersVisible = !answersVisible;
-            const list = document.getElementById('answers-list');
-            const icon = document.getElementById('chevron-icon');
-            if (answersVisible) {
-                list.classList.remove('hidden');
-                icon.style.transform = 'rotate(180deg)';
-            } else {
-                list.classList.add('hidden');
-                icon.style.transform = 'rotate(0deg)';
-            }
-        }
+      const data = await res.json();
+      console.log("HASIL:", data);
 
-        // Fungsi Utama Generate Soal (Panggil API Gemini)
-        async function generateQuestions() {
-            const mapel = document.getElementById('mapel').value;
-            const kelas = document.getElementById('kelas').value;
-            const topik = document.getElementById('topik').value;
-            const jumlah = document.getElementById('jumlah').value;
-            const kesulitan = document.getElementById('kesulitan').value;
+      // tampilkan ke area output (buat kalau belum ada)
+      let out = document.getElementById("output");
+      if (!out) {
+        out = document.createElement("pre");
+        out.id = "output";
+        out.style.whiteSpace = "pre-wrap";
+        out.style.padding = "16px";
+        out.style.border = "1px dashed #ccc";
+        out.style.borderRadius = "12px";
+        out.style.marginTop = "16px";
+        document.body.appendChild(out);
+      }
+      out.textContent = JSON.stringify(data, null, 2);
 
-            if (!mapel || !kelas || !topik) {
-                showError("Mohon isi Mata Pelajaran, Kelas, dan Topik materi.");
-                return;
-            }
-
-            setLoading(true);
-            hideError();
-
-            const systemPrompt = `Anda adalah AI Edu-Assistant profesional Indonesia. 
-            Tugas: Membuat soal asesmen kurikulum merdeka.
-            Aturan:
-            1. Jenjang SD & SMP: Opsi A, B, C, D (Hanya 4).
-            2. Jenjang SMA: Opsi A, B, C, D, E (Harus 5).
-            3. Pastikan bahasa mendidik dan sesuai usia siswa ${currentJenjang} kelas ${kelas}.
-            4. Gunakan format JSON murni sesuai spesifikasi.`;
-
-            const userQuery = `Buat ${jumlah} soal pilihan ganda:
-            Mata Pelajaran: ${mapel}
-            Kelas: ${kelas}
-            Jenjang: ${currentJenjang}
-            Materi: ${topik}
-            Kesulitan: ${kesulitan}
-            
-            Format Output JSON:
-            { "quiz": [ { "no": 1, "question": "pertanyaan", "options": {"A": "opsi", "B": "opsi", "C": "opsi", "D": "opsi"}, "answer": "A", "explanation": "pembahasan" } ] }`;
-
-            try {
-                const response = await try {
-  const response = await fetch("/.netlify/functions/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      prompt: userQuery
-    })
-  });
-
-  const data = await response.json();
-  console.log(data);
-
-} catch (error) {
-  console.error("Error:", error);
-}
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: userQuery }] }],
-                        systemInstruction: { parts: [{ text: systemPrompt }] },
-                        generationConfig: { 
-                            responseMimeType: "application/json", 
-                            temperature: 0.7 
-                        }
-                    })
-                });
-
-                const data = await response.json();
-                const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!content) throw new Error("Gagal mengambil data dari AI.");
-
-                const parsed = JSON.parse(content);
-                currentQuestions = parsed.quiz || [];
-                renderResults();
-            } catch (err) {
-                showError("Terjadi kendala teknis. Mohon periksa koneksi internet Bapak/Ibu.");
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        // Helper Fetch dengan Exponential Backoff (Sesuai Aturan)
-        async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
-            try {
-                const res = await fetch(url, options);
-                if (!res.ok) throw new Error("HTTP Error: " + res.status);
-                return res;
-            } catch (err) {
-                if (retries > 0) {
-                    await new Promise(r => setTimeout(r, delay));
-                    return fetchWithRetry(url, options, retries - 1, delay * 2);
-                }
-                throw err;
-            }
-        }
-
-        // Render Data ke UI
-        function renderResults() {
-            const list = document.getElementById('questions-list');
-            const answers = document.getElementById('answers-list');
-            
-            list.innerHTML = '';
-            
-            // Render Soal
-            currentQuestions.forEach(q => {
-                const qDiv = document.createElement('div');
-                qDiv.className = 'question-block';
-                
-                let optionsHtml = '';
-                // Filter agar tidak ada opsi kosong (fix bug E di SD)
-                Object.entries(q.options).forEach(([key, val]) => {
-                    if (val && val.toString().trim() !== "") {
-                        optionsHtml += `
-                            <div class="flex items-start gap-3">
-                                <span class="flex-shrink-0 w-6 h-6 flex items-center justify-center border-2 border-slate-100 rounded-lg text-xs font-bold text-slate-400 uppercase">${key}</span>
-                                <span class="text-slate-700 text-[15px] leading-relaxed">${val}</span>
-                            </div>
-                        `;
-                    }
-                });
-
-                qDiv.innerHTML = `
-                    <p class="font-bold text-slate-800 mb-5 leading-relaxed text-base">
-                        ${q.no}. ${q.question}
-                    </p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 ml-2 md:ml-4">
-                        ${optionsHtml}
-                    </div>
-                `;
-                list.appendChild(qDiv);
-            });
-
-            // Render Pembahasan
-            answers.innerHTML = '<h4 class="hidden print:block font-bold text-xl mb-6 border-b-2 pb-2">KUNCI JAWABAN & PEMBAHASAN</h4>';
-            currentQuestions.forEach(q => {
-                const aDiv = document.createElement('div');
-                aDiv.className = 'p-5 bg-green-50/50 border border-green-100 rounded-2xl print:bg-white print:border-slate-100 mb-4';
-                aDiv.innerHTML = `
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="bg-green-600 text-white px-2 py-0.5 rounded-md text-[10px] font-black uppercase">Nomor ${q.no}</span>
-                        <span class="font-black text-green-700">KUNCI: ${q.answer}</span>
-                    </div>
-                    <p class="text-sm text-green-800 leading-relaxed">
-                        <span class="font-bold">Pembahasan:</span> ${q.explanation}
-                    </p>
-                `;
-                answers.appendChild(aDiv);
-            });
-
-            // Update Header Cetak
-            document.getElementById('print-left').innerHTML = `
-                <p>Mata Pelajaran: ${document.getElementById('mapel').value}</p>
-                <p>Kelas / Jenjang: ${document.getElementById('kelas').value} / ${currentJenjang}</p>
-            `;
-            document.getElementById('print-right').innerHTML = `
-                <p>Materi: ${document.getElementById('topik').value}</p>
-                <p>Nama Siswa: ................................</p>
-            `;
-
-            document.getElementById('empty-state').classList.add('hidden');
-            document.getElementById('result-container').classList.remove('hidden');
-            window.scrollTo({ top: document.getElementById('result-container').offsetTop - 50, behavior: 'smooth' });
-        }
-
-        // State Manager: Loading
-        function setLoading(state) {
-            const btn = document.getElementById('generate-btn');
-            if (state) {
-                btn.disabled = true;
-                btn.classList.add('opacity-70', 'cursor-not-allowed');
-                btn.innerHTML = `<div class="loader"></div> <span class="ml-2">Sedang Merancang...</span>`;
-            } else {
-                btn.disabled = false;
-                btn.classList.remove('opacity-70', 'cursor-not-allowed');
-                btn.innerHTML = `<i data-lucide="sparkles" class="w-5 h-5"></i> <span id="btn-text">Hasilkan Soal</span>`;
-                lucide.createIcons();
-            }
-        }
-
-        // Pesan Error
-        function showError(msg) {
-            const box = document.getElementById('error-box');
-            document.getElementById('error-message').innerText = msg;
-            box.classList.remove('hidden');
-            setTimeout(() => hideError(), 5000);
-        }
-
-        function hideError() {
-            document.getElementById('error-box').classList.add('hidden');
-        }
-
-        // Salin Teks Soal
-        function copyToClipboard() {
-            let text = `SOAL ASESMEN: ${document.getElementById('topik').value}\n\n`;
-            currentQuestions.forEach(q => {
-                text += `${q.no}. ${q.question}\n`;
-                Object.entries(q.options).forEach(([key, val]) => {
-                    if (val && val.toString().trim() !== "") text += `${key}. ${val}\n`;
-                });
-                text += "\n";
-            });
-
-            const el = document.createElement('textarea');
-            el.value = text;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-
-            const btn = document.getElementById('copy-btn');
-            const original = btn.innerHTML;
-            btn.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-green-600"></i> Tersalin!';
-            setTimeout(() => {
-                btn.innerHTML = original;
-                lucide.createIcons();
-            }, 2000);
-        }
-    </script>
-</body>
-
-</html>
+    } catch (err) {
+      console.error("GAGAL:", err);
+      alert("Gagal generate. Cek Console (F12) untuk detail.");
+    }
+  }
+</script>
